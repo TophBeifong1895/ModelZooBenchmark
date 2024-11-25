@@ -1,0 +1,11 @@
+{
+  "cv-det": ["目标检测", "#82ca9d"],
+  "cv-cls": ["分类", "#9EDAE5"],
+  "cv-kpt_mAP": ["人类关键点检测", "#2CA02C"],
+  "cv-kpt_pxErr": ["物体关键点检测", "#FF9896"],
+  "cv-mot": ["多目标追踪", "#9467BD"],
+  "cv-seg_PQ": ["全景分割", "#FFBB78"],
+  "cv-seg_mAP": ["实例分割", "#BCBD22"],
+  "cv-seg_mIoU": ["语义分割", "#FF7F0E"],
+  "cv-sod": ["显著性检测", "#17BECF"]
+}
