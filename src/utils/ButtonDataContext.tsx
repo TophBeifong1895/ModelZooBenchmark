@@ -13,7 +13,7 @@ function ButtonDataProvider({ children }: { children: React.ReactNode }) {
     const [buttonData, setButtonData] = useState<ButtonData | null>(null);
   
     useEffect(() => {
-      fetch('./cfg/style_button.json')
+      fetch('../cfg/style_button.json')
         .then(response => response.json())
         .then(jsonData => {
           setButtonData(jsonData);
