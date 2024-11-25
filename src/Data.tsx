@@ -193,7 +193,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
     <div>
       <input type="file" onChange={handleExcelUpload} />        {/*选择文件*/}
       <div id="buttons-container" ref={buttonsContainerRef}></div>
-      {/* <pre>{JSON.stringify(chart_data, null, 2)}</pre>     在页面上输出提取的数据 */}
+      <pre>{JSON.stringify(buttonData, null, 2)}</pre>     在页面上输出提取的数据
     </div>
   );
 };
