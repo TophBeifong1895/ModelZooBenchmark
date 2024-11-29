@@ -1,10 +1,7 @@
 import './Data.css';
 import * as XLSX from 'xlsx';
-// import Slider from 'react-slider';
-// import { Scatter } from '@ant-design/plots';
 import { useButtonData } from './utils/ButtonDataContext';
 import React, { useState, useRef, useEffect } from 'react';
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface ChartData{
@@ -30,16 +27,18 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
 
   const buttonData = useButtonData();
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
-  // const [chart_data, setChartData] = useState<ChartData>();
   const [chart_data, setChartData] = useState<ChartData>({
     style: '',
     color: '',
     data: []
   });
+
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     const file = e.target.files?.[0];     
-    if (!file) return ;
+    if (!file) {
+      return;
+    }
     const reader = new FileReader();
     reader.onerror = (error) => {
       console.error('文件读取错误', error);
@@ -47,7 +46,9 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
     reader.onload = (event) => {
 
       const arrayBuffer = event.target?.result;
-      if ( !( arrayBuffer instanceof ArrayBuffer ) ) return;
+      if ( !( arrayBuffer instanceof ArrayBuffer ) ) {
+        return;
+      }
       const excelData = new Uint8Array(arrayBuffer);    // 二进制内容
       const workbook = XLSX.read( excelData, { type: 'array' } );   // 工作簿信息
       const buttonsContainer = buttonsContainerRef.current;         // 获取按钮容器
@@ -109,10 +110,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
       
             // 提取targetHeaders指定列的数据
             for (let rowIndex = headerRow; rowIndex <= headerRange.e.r; rowIndex++) {
-              
-              // console.log('rowIndex'+rowIndex);
               const rowData = {} as { [key: string]: unknown };
-
               for (const columnIndex of targetColumnIndices) {
                 const cellAddress = XLSX.utils.encode_cell({ c: columnIndex, r: rowIndex });
                 const cell = worksheet[cellAddress];
@@ -153,7 +151,6 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
                 metrics      : metrics_data
               }
 
-
               console.log('each_model_data', each_model_data);
 
               if (newChartData) {
@@ -193,8 +190,8 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
     <div>
       <input type="file" onChange={handleExcelUpload} />        {/*选择文件*/}
       <div id="buttons-container" ref={buttonsContainerRef}></div>
-      {/* <pre>{JSON.stringify(buttonData, null, 2)} 在页面上输出提取的数据</pre>     */}
-      {/* <h2>test mark</h2> */}
+      {/* <pre>{JSON.stringify(buttonData, null, 2)} 在页面上输出提取的数据</pre>    
+      <h2>test mark</h2> */}
     </div>
   );
 };
@@ -206,8 +203,12 @@ function Data() {
   const [chartData, setChartData] = useState<ChartData>();
   const [showChart, setShowChart] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('');
-  const [selectedPoint,  setSelectedPoint]  = useState<any>(null);
-
+  const [selectedPoint,  setSelectedPoint]  = useState<ChartData['data'][0] | null>(null);
+  
+  const [timeMin, setTimeMin] = useState<number | 'auto'>('auto');
+  const [timeMax, setTimeMax] = useState<number | 'auto'>('auto');
+  const [metricMin, setMetricMin] =  useState<number | 'auto'>('auto');
+  const [metricMax, setMetricMax] =  useState<number | 'auto'>('auto');
   const handleExcelData = (excel_data: ChartData) => {
     setChartData(excel_data);
     setShowChart(true);   // 数据加载完成后显示图表
@@ -216,6 +217,10 @@ function Data() {
     if (excel_data.data) {          // 确保数据不为空
       const firstMetricKey = Object.keys(excel_data.data[0].metrics)[0];
       setSelectedMetric(firstMetricKey);
+      setTimeMin(0);
+      setTimeMax('auto');
+      setMetricMin(0);
+      setMetricMax('auto');
     };
   };
 
@@ -223,13 +228,31 @@ function Data() {
     setSelectedMetric(metricKey);
   };
   
-  const handlePointClick = (point: any) => {
+  const handlePointClick = (point: ChartData['data'][0]) => {
     setSelectedPoint(point);
     console.log(`Selected point: ${JSON.stringify(point)}`)
   }
-
+ 
   const handleCloseSidebar = () => {
     setSelectedPoint(null);
+  };
+
+  const handleTimeDomainChange = (event: React.ChangeEvent<HTMLInputElement>, isMin: boolean) => {
+    const value = parseFloat(event.target.value);
+    if (isMin) {
+      setTimeMin(value);
+    } else {
+      setTimeMax(value);
+    }
+  };
+
+  const handleMetricDomainChange = (event: React.ChangeEvent<HTMLInputElement>, isMin: boolean) => {
+    const value = parseFloat(event.target.value);
+    if (isMin) {
+      setMetricMin(value);
+    } else {
+      setMetricMax(value);
+    }
   };
 
   useEffect(() => {}, [selectedMetric, chartData]);    // 监听 selectedMetric 的变化, 依赖数组指定哪些状态或属性变化时触发 useEffect
@@ -239,7 +262,7 @@ function Data() {
   return (
     <>
       <h1>Icraft Benchmark</h1>
-      {/* <pre>{JSON.stringify(chartData, null, 2)}</pre> */}
+
       {showChart && (
         <div className="chart">
           <h3>Time Metrics Chart</h3>
@@ -252,74 +275,134 @@ function Data() {
               )
             }
           </div>
+
+          <div style={{ height: '20px' }}></div>
+
+          <div style={{ display: 'flex', flexDirection: 'row' }}>    
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+
+              <label>
+                Time Min:
+                <input
+                  type="number"
+                  value={timeMin}
+                  onChange={(event) => handleTimeDomainChange(event, true)}
+                />
+              </label>
+
+              <div style={{ height: '20px' }}></div>
+
+              <label>
+                Time Max:
+                <input
+                  type="number"
+                  value={timeMax}
+                  onChange={(event) => handleTimeDomainChange(event, false)}
+                />
+              </label>
+
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <label>
+                Metrics Min:
+                <input
+                  type="number"
+                  value={metricMin}
+                  onChange={(event) => handleMetricDomainChange(event, true)}
+                />
+              </label>
+              
+              <div style={{ height: '20px' }}></div>
+
+              <label>
+                Metrics Max:
+                <input
+                  type="number"
+                  value={metricMax}
+                  onChange={(event) => handleMetricDomainChange(event, false)}
+                />
+        
+              </label>
+            </div>
+          </div>
           
-          <TransformWrapper>
-            <TransformComponent>
-              <div style={{ width: '100%', height: '600px' }}>
+          <div style={{ height: '20px' }}></div>
+          
+          <div style={{ width: '100%', height: '600px' }}>
+            <ScatterChart width={1200} height={600} data={chartData?.data}>
+              <XAxis
+                dataKey={(entry) => entry.time}
+                name="time"
+                unit="ms"
+                type="number"
+                domain={[timeMin, timeMax]}
+                allowDataOverflow
+                label={{
+                  value   : 'Icore Time',
+                  position: 'insideRight',
+                  offset  : 60,
+                  style   : { fontSize: '20px' }
+                }}
+              />
+              <YAxis    // chartData是一个数组，entry代表的是chartData中的每一个对象
+                dataKey={ (entry) => entry.metrics [selectedMetric || metricsKeys[0] ] }
+                name="metrics"
+                type="number"
+                allowDataOverflow
+                domain={[metricMin, metricMax]}
+                label={{
+                  value   : 'Metrics',
+                  angle   : -90,
+                  position: 'insideLeft',
+                  offset  : 5,
+                  style   : { fontSize: '20px' }
+                }}
+              />
 
-                
-                <ScatterChart width={1200} height={600} data={chartData?.data}>
-                  <XAxis
-                    dataKey={ (entry) => entry.time }
-                    name="time"
-                    unit="ms"
-                    type="number"
-                    label={{
-                      value   : 'Icore Time',
-                      position: 'insideRight',
-                      offset  : 60,
-                      style   : { fontSize: '20px' }
-                    }}
-                  />
-                  <YAxis    // chartData是一个数组，entry代表的是chartData中的每一个对象
-                    dataKey={ (entry) => entry.metrics [selectedMetric || metricsKeys[0] ] }
-                    name="metrics"
-                    type="number"
-                    label={{
-                      value   : 'Metrics',
-                      angle   : -90,
-                      position: 'insideLeft',
-                      offset  : 5,
-                      style   : { fontSize: '20px' }
-                    }}
-                  />
+              <CartesianGrid strokeDasharray="3 3" />   {/*网格线*/}  
+              <Tooltip 
+                cursor={ { strokeDasharray: '3 3' } }
+                content={
+                  ( { payload } ) => {
+                    if ( payload && payload.length > 0 ) {
+                      const infoData = payload[0].payload;
+                      return (                              //  悬停显示
+                        <div style={{ background: 'white', padding: '10px', border: '1px solid #ccc' }}>
+                          <p style={{ color: 'black' }}>  {infoData['model']} {infoData['bit']}bit</p>
+                          <p style={{ color: 'black' }}>  Time:    {infoData['time']} ms</p>
+                          <p style={{ color: 'black' }}>  Metrics: {infoData['metrics'][selectedMetric]}</p>
+                        </div>
+                      );
+                    };
+                    return null;
+                  }
+                }
+              />
 
-                  <CartesianGrid strokeDasharray="3 3" />   {/*网格线*/}  
-                  <Tooltip 
-                    cursor={ { strokeDasharray: '3 3' } }
-                    content={
-                      ( { payload } ) => {
-                        if ( payload && payload.length > 0 ) {
-                          const infoData = payload[0].payload;
-                          // <pre>
-                          // {JSON.stringify(payload, null, 2)}
-                          // </pre>
-                          return (                              //  悬停显示
-                            <div style={{ background: 'white', padding: '10px', border: '1px solid #ccc' }}>
-                              <p style={{ color: 'black' }}>  {infoData['model']} {infoData['bit']}bit</p>
-                              <p style={{ color: 'black' }}>  Time:    {infoData['time']} ms</p>
-                              <p style={{ color: 'black' }}>  Metrics: {infoData['metrics'][selectedMetric]}</p>
-                            </div>
-                          );
-                        };
-                        return null;
-                      }
-                    }
-                  />
+              <Legend
+                align="left"
+                verticalAlign="top"
+                wrapperStyle={ { marginTop: -10, marginLeft: -5 } } 
+              />   
 
-                  <Legend align="left" verticalAlign="top" wrapperStyle={ { marginTop: -10, marginLeft: -5 } } />   
-                  <Scatter name={selectedMetric} dataKey={(entry) => entry['metrics'][selectedMetric || metricsKeys[0]]} fill={showColor} radius={0.5}  onClick={(data) => handlePointClick(data)}/>
+              <Scatter
+                name={selectedMetric}
+                dataKey={(entry) => entry['metrics'][selectedMetric || metricsKeys[0]]}
+                fill={showColor}
+                radius={0.5}
+                onClick={(data) => handlePointClick(data)}
+              />
 
-                </ScatterChart>
-              </div> 
-            </TransformComponent>
-          </TransformWrapper>
+            </ScatterChart>
+          </div> 
 
-          {/* 侧边栏 */}
+
           {selectedPoint && (
             <div style={{ position: 'fixed', top: 0, right: 0, width: '300px', height: '100%', backgroundColor: '#666666', padding: '20px' }}>
-              {/* <h2>详细信息</h2> */}
-              <button onClick={handleCloseSidebar} style={{ position: 'absolute', top: '10px', right: '10px' }}>
+
+              <button
+                onClick={handleCloseSidebar}
+                style={{ position: 'absolute', top: '10px', right: '10px' }}>
                 关闭
               </button>
               <h3> {selectedPoint.model} {selectedPoint.bit}bit</h3>
@@ -341,7 +424,6 @@ function Data() {
       )}
 
       <div className="Data">
-        {/* <h1>Excel Data Reader</h1> */}
         <ExcelReader onDataLoaded={handleExcelData} />
       </div>
     </>
