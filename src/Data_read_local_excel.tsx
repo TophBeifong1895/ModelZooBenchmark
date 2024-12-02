@@ -36,19 +36,24 @@ export interface ExcelReaderProps{
 
 const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // FC for functional component 函数组件
 
-  const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
-  
-  useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
+  // const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
+  // useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
 
-    fetch('./Icraft_Icore_Metrics_V3.6.2_subtotal.xlsx')
-      .then(response => response.arrayBuffer())
-      .then(buffer => {
-        const data = new Uint8Array(buffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        setWorkbook(workbook);
-      })
-      .catch(error => console.error('Error reading Excel file:', error));
-  }, []);
+  //   fetch('./Icraft_Icore_Metrics_V3.6.2_subtotal.xlsx')
+  //     .then(response => response.arrayBuffer())
+  //     .then(buffer => {
+  //       const data = new Uint8Array(buffer);
+  //       const workbook = XLSX.read(data, { type: 'array' });
+
+  //       console.log("workbook : "+ JSON.stringify(workbook, null, 2));
+
+  //       const sheetName = workbook.SheetNames[0];
+  //       const sheet = workbook.Sheets[sheetName];
+  //       const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+  //     })
+  //     .catch(error => console.error('Error reading Excel file:', error));
+  // }, []);
 
 
   const buttonData = useButtonData();
@@ -59,10 +64,27 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
     data: []
   });
 
+  const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 
-  useEffect(() => {
-    if (workbook) {
-      const buttonsContainer = buttonsContainerRef.current;
+    const file = e.target.files?.[0];     
+    if (!file) {
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = (error) => {
+      console.error('文件读取错误', error);
+    };
+    reader.onload = (event) => {
+
+      const arrayBuffer = event.target?.result;
+      if ( !( arrayBuffer instanceof ArrayBuffer ) ) {
+        return;
+      }
+      const excelData = new Uint8Array(arrayBuffer);    // 二进制内容
+      const workbook = XLSX.read( excelData, { type: 'array' } );   // 工作簿信息
+      const buttonsContainer = buttonsContainerRef.current;         // 获取按钮容器
+      const worksheetsData: Record<string, unknown> = {};
+      
       if (buttonsContainer) {
         buttonsContainer.innerHTML = '';
         for (let i = 0; i < workbook.SheetNames.length; i++) {
@@ -75,13 +97,10 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
 
           const sheetName = workbook.SheetNames[i];
           const worksheet = workbook.Sheets[sheetName];
-          // const data = XLSX.utils.sheet_to_json(worksheet); 
-          // worksheetsData[sheetName] = data;
-          
-
+          const data = XLSX.utils.sheet_to_json(worksheet); 
+          worksheetsData[sheetName] = data;
           
           const button = document.createElement('button');          // 创建按钮
-          button.textContent = sheetName;
           
           let displayName;    // 按钮显示名称
           if (buttonData && buttonData[sheetName] && buttonData[sheetName][0]) {
@@ -184,12 +203,14 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
           // 将按钮添加到容器中
           buttonsContainer.appendChild(button); // appendChild将子节点添加到指定父节点  buttonsContainer是一个html元素
         };
+        e.target.value = '';  // 重置文件选择器
       }
       else {
         console.error('无法找到按钮容器元素，ID: buttons-container');
-      }
-    }
-  }, [workbook, onDataLoaded, buttonData]);
+      };
+    };
+    reader.readAsArrayBuffer(file);     //  readAsArrayBuffer必须在onload之后使用 读取文件内容后触发onload时间处理程序
+  };
 
   // 确保 chart_data 被正确使用
   useEffect(() => {
@@ -198,7 +219,10 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
 
   return (
     <div>
+      <input type="file" onChange={handleExcelUpload} />        {/*选择文件*/}
       <div id="buttons-container" ref={buttonsContainerRef}></div>
+      {/* <pre>{JSON.stringify(buttonData, null, 2)} 在页面上输出提取的数据</pre>    
+      <h2>test mark</h2> */}
     </div>
   );
 };
