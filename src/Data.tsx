@@ -19,27 +19,18 @@ interface ChartData{
   } [ ];
 };
 
-// interface RowData {
-//   time: number;
-//   metrics: { [key: string]: number };
-//   model: string;
-//   bit: string;
-//   input_shape: string;
-//   ocmopt: string;
-//   quantization: string;
-//   dataset: string;
-// }
-
 export interface ExcelReaderProps{
   onDataLoaded : ( data : ChartData ) => void;
 };
 
 const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // FC for functional component 函数组件
 
-  const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
-  
-  useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
+  const [workbook,        setWorkbook]        = useState<XLSX.WorkBook | null>(null);
+  const [datasets,        setDatasets]        = useState<string[]>([]);
+  const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
+  const [isButtonClicked, setIsButtonClicked] = useState<boolean>(false);
 
+  useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
     fetch('./Icraft_Icore_Metrics_V3.6.2_subtotal.xlsx')
       .then(response => response.arrayBuffer())
       .then(buffer => {
@@ -50,7 +41,6 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
       .catch(error => console.error('Error reading Excel file:', error));
   }, []);
 
-
   const buttonData = useButtonData();
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
   const [chart_data, setChartData] = useState<ChartData>({
@@ -58,7 +48,11 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
     color: '',
     data: []
   });
-
+  const [fullChartData, setFullChartData] = useState<ChartData>({
+    style: '',
+    color: '',
+    data: []
+  });
 
   useEffect(() => {
     if (workbook) {
@@ -75,11 +69,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
 
           const sheetName = workbook.SheetNames[i];
           const worksheet = workbook.Sheets[sheetName];
-          // const data = XLSX.utils.sheet_to_json(worksheet); 
-          // worksheetsData[sheetName] = data;
-          
 
-          
           const button = document.createElement('button');          // 创建按钮
           button.textContent = sheetName;
           
@@ -91,7 +81,6 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
           };
 
           button.textContent = displayName;
-          
           button.addEventListener('click', () => {          // 添加按钮点击事件
             console.log(`Sheet Name: ${sheetName}`);
             const headerRow = 1;
@@ -120,8 +109,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
               return index;
             }).filter(index => index !== null);
       
-            // 提取targetHeaders指定列的数据
-            for (let rowIndex = headerRow; rowIndex <= headerRange.e.r; rowIndex++) {
+            for (let rowIndex = headerRow; rowIndex <= headerRange.e.r; rowIndex++) {   // 提取targetHeaders指定列的数据
               const rowData = {} as { [key: string]: unknown };
               for (const columnIndex of targetColumnIndices) {
                 const cellAddress = XLSX.utils.encode_cell({ c: columnIndex, r: rowIndex });
@@ -131,12 +119,34 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
                 };
               };
   
-              const datasetColumnIndex = headers.indexOf('Dataset');    //Dataset后面的列全是精度
+              const datasetColumnIndex = headers.indexOf('Dataset');    // Dataset后面的列全是精度
               if (datasetColumnIndex === -1) {
                 console.error('找不到 "Dataset" 列');
                 continue;
               };
+                 
+              const datasetColumnData = [];           // 提取 "Dataset" 列的数据
+              for (let rowIndex = headerRow; rowIndex <= headerRange.e.r; rowIndex++) {
+                const cellAddress = XLSX.utils.encode_cell({ c: datasetColumnIndex, r: rowIndex });
+                const cell = worksheet[cellAddress];
+                if (cell && cell.v !== undefined) {
+                  datasetColumnData.push(cell.v);
+                }
+              }
               
+              const uniqueDatasets = [...new Set(datasetColumnData)];
+              setDatasets(uniqueDatasets);
+
+              if (uniqueDatasets.length > 1){
+                console.log('生成多个数据集按钮 重置数据')
+                console.log('rowData : '+ JSON.stringify(rowData))
+                
+                if (rowData['Dataset'] === selectedDataset){
+         
+                    console.log("selectedDataset : "+ selectedDataset)
+                  }
+               }
+
               // 获取从 "Dataset" 列开始的所有列的数据和表头名称
               const startIndex = datasetColumnIndex + 1;
               const endIndex = headerRange.e.c;       // 最后一列的索引
@@ -177,8 +187,10 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
               }
             };
 
+            setFullChartData(newChartData);     
             setChartData(newChartData);        // 状态更新函数 使用新的extracted_data值
             onDataLoaded(newChartData);   // 调用父组件的回调函数 将数据传递给父组件
+            setIsButtonClicked(true);
           });
 
           // 将按钮添加到容器中
@@ -189,7 +201,19 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
         console.error('无法找到按钮容器元素，ID: buttons-container');
       }
     }
-  }, [workbook, onDataLoaded, buttonData]);
+  }, [workbook, onDataLoaded, buttonData, selectedDataset]);
+  const handleDatasetSelect = (datasets: React.SetStateAction<string | null>) => {
+    setSelectedDataset(datasets);
+    const filteredData = fullChartData.data.filter(row => row.dataset === datasets);
+    setChartData({
+      ...fullChartData,
+      data: filteredData
+    });
+    onDataLoaded({
+      ...fullChartData,
+      data:filteredData
+    });
+  }
 
   // 确保 chart_data 被正确使用
   useEffect(() => {
@@ -198,7 +222,23 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
 
   return (
     <div>
-      <div id="buttons-container" ref={buttonsContainerRef}></div>
+      <div id="buttons-container" ref={buttonsContainerRef}>
+      </div>
+
+      {isButtonClicked && (
+        <div>
+          <h3>Current Dataset</h3>
+          {datasets.map(dataset => (
+            <button
+              key={dataset}
+              onClick={() => handleDatasetSelect(dataset)}
+              style={{ marginRight: '10px' }}
+            >
+            {dataset}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -218,6 +258,7 @@ function Data() {
   const [metricMax, setMetricMax] =  useState<number | 'auto'>('auto');
   const handleExcelData = (excel_data: ChartData) => {
     setChartData(excel_data);
+    console.log('excel_data : ', excel_data);
     setShowChart(true);   // 数据加载完成后显示图表
     
     // 初始化selectedMetric 还没点按钮选指标时 显示第一个精度指标的数据
@@ -244,7 +285,6 @@ function Data() {
   
   const handlePointClick = (point: ChartData['data'][0]) => {
     setSelectedPoint(point);
-    console.log(`Selected point: ${JSON.stringify(point)}`)
   }
  
   const handleCloseSidebar = () => {
@@ -274,8 +314,9 @@ function Data() {
   const showColor = chartData?.color
   
   return (
+    
     <>
-      <h1>Icraft Benchmark</h1>
+      <h1>ModelZoo Benchmark</h1>
 
       {showChart && (
         <div className="chart">
@@ -290,58 +331,61 @@ function Data() {
             }
           </div>
 
-          <div style={{ height: '20px' }}></div>
-
-          <div style={{ display: 'flex', flexDirection: 'row' }}>    
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-
-              <label>
-                Time Min:
-                <input
-                  type="number"
-                  value={timeMin}
-                  onChange={(event) => handleTimeDomainChange(event, true)}
-                />
-              </label>
-
-              <div style={{ height: '20px' }}></div>
-
-              <label>
-                Time Max:
-                <input
-                  type="number"
-                  value={timeMax}
-                  onChange={(event) => handleTimeDomainChange(event, false)}
-                />
-              </label>
-
+          <div>
+            <div style={{ height: '20px' }}>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <label>
-                Metrics Min:
-                <input
-                  type="number"
-                  value={metricMin}
-                  onChange={(event) => handleMetricDomainChange(event, true)}
-                />
-              </label>
-              
-              <div style={{ height: '20px' }}></div>
 
-              <label>
-                Metrics Max:
-                <input
-                  type="number"
-                  value={metricMax}
-                  onChange={(event) => handleMetricDomainChange(event, false)}
-                />
-        
-              </label>
+            <div style={{ display: 'flex', flexDirection: 'row' }}>    
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+
+                <label>
+                  Time Min:
+                  <input
+                    type="number"
+                    value={timeMin}
+                    onChange={(event) => handleTimeDomainChange(event, true)}
+                  />
+                </label>
+
+                <div style={{ height: '20px' }}></div>
+
+                <label>
+                  Time Max:
+                  <input
+                    type="number"
+                    value={timeMax}
+                    onChange={(event) => handleTimeDomainChange(event, false)}
+                  />
+                </label>
+
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <label>
+                  Metrics Min:
+                  <input
+                    type="number"
+                    value={metricMin}
+                    onChange={(event) => handleMetricDomainChange(event, true)}
+                  />
+                </label>
+                
+                <div style={{ height: '20px' }}></div>
+
+                <label>
+                  Metrics Max:
+                  <input
+                    type="number"
+                    value={metricMax}
+                    onChange={(event) => handleMetricDomainChange(event, false)}
+                  />
+          
+                </label>
+              </div>
             </div>
+          
+            <div style={{ height: '20px' }}></div>
           </div>
-          
-          <div style={{ height: '20px' }}></div>
-          
+
           <div style={{ width: '100%', height: '600px' }}>
             <ScatterChart width={1200} height={600} data={chartData?.data}>
               <XAxis
@@ -411,19 +455,33 @@ function Data() {
           </div> 
 
 
-          {selectedPoint && (
-            <div style={{ position: 'fixed', top: 0, right: 0, width: '300px', height: '100%', backgroundColor: '#666666', padding: '20px' }}>
+          {selectedPoint && (   
+            <div style={{position: 'fixed',
+                         top: 0,
+                         right: 0,
+                         width: '300px',
+                         height: '100%',
+                         backgroundColor: '#bfbfbf',
+                         padding: '20px',
+                         color: 'black',
+                         }}>
 
               <button
                 onClick={handleCloseSidebar}
-                style={{ position: 'absolute', top: '10px', right: '10px' }}>
-                关闭
+                style={{position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        padding: '4px 8px',
+                        fontSize: '20px',
+                        backgroundColor: '#555555',
+                        }}>
+                ×
               </button>
               <h3> {selectedPoint.model} {selectedPoint.bit}bit</h3>
               <p style={{ textAlign: 'left' }}> Input shape: {selectedPoint.input_shape}</p>
               <p style={{ textAlign: 'left' }}> Time: {selectedPoint.time} ms</p>
               <p style={{ textAlign: 'left' }}> Metrics:</p>
-              <ul>
+              <ul style={{textAlign: 'left'}}>
                 {Object.entries(selectedPoint.metrics).map(([key, value]) => (
                   <li key={key}>{key}: {value as ReactNode}</li>
                 ))}

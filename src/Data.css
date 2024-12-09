@@ -5,6 +5,11 @@
   text-align: center;
 }
 
+.white-background {
+  background-color: white;
+  min-height: 100vh;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
