@@ -1,7 +1,7 @@
-# IcraftBenchmark
+# ModelZoo Benchmark
 
-Icraft Benchmark Data shown by Interactive Html Page
+ModelZoo Benchmark Data shown by Interactive Html Page
 
 Try it !
 
-[Click to play]([Icraft Benchmark](https://tophbeifong1895.github.io/IcraftBenchmark/))
+[Click to play]([ModelZoo Benchmark](https://tophbeifong1895.github.io/ModelZooBenchmark/))
