@@ -29,24 +29,18 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
   const [datasets,        setDatasets]        = useState<string[]>([]);
   const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
   const [isButtonClicked, setIsButtonClicked] = useState<boolean>(false);
-  const [selectedExcel,   setSelectedExcel]   = useState<string>('Icraft_Icore_Metrics_V3.7.0_subtotal');
 
   useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
-    const fetchData = async () => {
-      try{
-        const response = await fetch(`./${selectedExcel}.xlsx`);
-        const buffer = await response.arrayBuffer();
+    
+    fetch('./Icraft_Icore_Metrics_V3.7.0_subtotal.xlsx')
+      .then(response => response.arrayBuffer())
+      .then(buffer => {
         const data = new Uint8Array(buffer);
         const workbook = XLSX.read(data, { type: 'array' });
         setWorkbook(workbook);
-      }
-      catch (error) {
-        console.error('Error reading Excel file:', error);
-      }  
-    } 
-
-    fetchData();
-  }, [selectedExcel]);
+      })
+      .catch(error => console.error('Error reading Excel file:', error));
+  }, []);
 
   const buttonData = useButtonData();
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
@@ -231,6 +225,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
     <div>
       <div id="buttons-container" ref={buttonsContainerRef}>
       </div>
+
       {isButtonClicked && (
         <div>
           <h3>Current Dataset</h3>
@@ -245,11 +240,6 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
           ))}
         </div>
       )}
-
-      <select onChange={(e) => setSelectedExcel(e.target.value)}>
-        <option value="Icraft_Icore_Metrics_V3.7.0_subtotal">Benchmark_V3.7.0</option>
-        <option value="Icraft_Icore_Metrics_V3.6.2_subtotal">Benchmark_V3.6.2</option>
-      </select>
     </div>
   );
 };

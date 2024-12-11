@@ -1,1 +1,1 @@
-{"root":["./src/appstyle.tsx","./src/data.tsx","./src/data_read_local_excel.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/utils/buttondatacontext.tsx"],"version":"5.6.3"}
+{"root":["./src/appstyle.tsx","./src/data.tsx","./src/data_read_excel_in_repo.tsx","./src/data_read_local_excel.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/utils/buttondatacontext.tsx"],"version":"5.6.3"}
