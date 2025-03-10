@@ -228,7 +228,13 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
   }, [chart_data]);
 
   return (
-    <div>
+    <div>      
+      <select onChange={(e) => setSelectedExcel(e.target.value)}>
+        <option value="Icraft_Icore_Metrics_V3.7.0_subtotal">Benchmark_V3.7.0</option>
+        <option value="Icraft_Icore_Metrics_V3.6.2_subtotal">Benchmark_V3.6.2</option>
+      </select>
+      <div style={{ height: '20px' }}>
+      </div>
       <div id="buttons-container" ref={buttonsContainerRef}>
       </div>
       {isButtonClicked && (
@@ -245,11 +251,6 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
           ))}
         </div>
       )}
-
-      <select onChange={(e) => setSelectedExcel(e.target.value)}>
-        <option value="Icraft_Icore_Metrics_V3.7.0_subtotal">Benchmark_V3.7.0</option>
-        <option value="Icraft_Icore_Metrics_V3.6.2_subtotal">Benchmark_V3.6.2</option>
-      </select>
     </div>
   );
 };
@@ -267,6 +268,7 @@ function Data() {
   const [timeMax, setTimeMax] = useState<number | 'auto'>('auto');
   const [metricMin, setMetricMin] =  useState<number | 'auto'>('auto');
   const [metricMax, setMetricMax] =  useState<number | 'auto'>('auto');
+  
   const handleExcelData = (excel_data: ChartData) => {
     setChartData(excel_data);
     console.log('excel_data : ', excel_data);
