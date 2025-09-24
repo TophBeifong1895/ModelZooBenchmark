@@ -32,7 +32,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
 
   useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
     
-    fetch('./Icraft_Icore_Metrics_V3.7.0_subtotal.xlsx')
+    fetch('./Icraft_Icore_Metrics_V3.30.0_subtotal.xlsx')
       .then(response => response.arrayBuffer())
       .then(buffer => {
         const data = new Uint8Array(buffer);

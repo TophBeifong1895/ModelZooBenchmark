@@ -29,7 +29,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
   const [datasets,        setDatasets]        = useState<string[]>([]);
   const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
   const [isButtonClicked, setIsButtonClicked] = useState<boolean>(false);
-  const [selectedExcel,   setSelectedExcel]   = useState<string>('Icraft_Icore_Metrics_V3.7.0_subtotal');
+  const [selectedExcel,   setSelectedExcel]   = useState<string>('Icraft_Icore_Metrics_V3.30.0_subtotal');
 
   useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
     const fetchData = async () => {
@@ -230,6 +230,7 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
   return (
     <div>      
       <select onChange={(e) => setSelectedExcel(e.target.value)}>
+        <option value="Icraft_Icore_Metrics_V3.30.0_subtotal">Benchmark_V3.31.0</option>
         <option value="Icraft_Icore_Metrics_V3.7.0_subtotal">Benchmark_V3.7.0</option>
         <option value="Icraft_Icore_Metrics_V3.6.2_subtotal">Benchmark_V3.6.2</option>
       </select>
@@ -400,7 +401,17 @@ function Data() {
           </div>
 
           <div style={{ width: '100%', height: '600px' }}>
-            <ScatterChart width={1200} height={600} data={chartData?.data}>
+            <ScatterChart width={1200} height={600}
+              data=
+                {chartData?.data?.filter(
+                  entry => {
+                    const metricValue = entry.metrics[selectedMetric || metricsKeys[0]];
+                    return typeof entry.time === 'number' && !isNaN(entry.time) &&
+                          typeof metricValue === 'number' && !isNaN(metricValue) &&
+                          metricValue !== null; // 明确排除 null 值
+                  })
+                }
+            >
               <XAxis
                 dataKey={(entry) => entry.time}
                 name="time"

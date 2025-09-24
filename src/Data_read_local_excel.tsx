@@ -15,7 +15,7 @@ interface ChartData{
     quantization : string,
     dataset      : string,
     time         : number,
-    metrics      : { [ key : string ] : number },
+    metrics      : { [ key : string ] : number | null },
   } [ ];
 };
 
@@ -35,26 +35,6 @@ export interface ExcelReaderProps{
 };
 
 const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // FC for functional component 函数组件
-
-  // const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null);
-  // useEffect(() => {    //   读取仓库中的 Excel 文件 定义一个状态来存储workbook数据
-
-  //   fetch('./Icraft_Icore_Metrics_V3.6.2_subtotal.xlsx')
-  //     .then(response => response.arrayBuffer())
-  //     .then(buffer => {
-  //       const data = new Uint8Array(buffer);
-  //       const workbook = XLSX.read(data, { type: 'array' });
-
-  //       console.log("workbook : "+ JSON.stringify(workbook, null, 2));
-
-  //       const sheetName = workbook.SheetNames[0];
-  //       const sheet = workbook.Sheets[sheetName];
-  //       const jsonData = XLSX.utils.sheet_to_json(sheet);
-
-  //     })
-  //     .catch(error => console.error('Error reading Excel file:', error));
-  // }, []);
-
 
   const buttonData = useButtonData();
   const buttonsContainerRef = useRef<HTMLDivElement>(null);
@@ -162,12 +142,14 @@ const ExcelReader : React.FC<ExcelReaderProps> = ( { onDataLoaded } ) => {   // 
               const metricsColumnIndices = Array.from({ length: endIndex - startIndex + 1 }, (_, index) => startIndex + index);
               
               // 提取从 "Dataset" 列开始的所有列的数据  ----->  精度数据
-              const metrics_data: { [ key: string ]: number } = {};
+              const metrics_data: { [ key: string ]: number | null } = {};
               for (const columnIndex of metricsColumnIndices) {
                 const cellAddress = XLSX.utils.encode_cell({ c: columnIndex, r: rowIndex });
                 const cell = worksheet[cellAddress];
                 if (cell && cell.v !== undefined) {
-                  metrics_data[headers[columnIndex]] = cell.v
+                  metrics_data[headers[columnIndex]] = cell.v as number;
+                } else {
+                  metrics_data[headers[columnIndex]] = null;   // 如果单元格为空 则赋值为null
                 };
               };
 
@@ -367,7 +349,18 @@ function Data() {
           <div style={{ height: '20px' }}></div>
           
           <div style={{ width: '100%', height: '600px' }}>
-            <ScatterChart width={1200} height={600} data={chartData?.data}>
+            <ScatterChart 
+              width={1200} height={600}
+              data=
+              {chartData?.data?.filter(
+                entry => {
+                  const metricValue = entry.metrics[selectedMetric || metricsKeys[0]];
+                  return typeof entry.time === 'number' && !isNaN(entry.time) &&
+                         typeof metricValue === 'number' && !isNaN(metricValue) &&
+                         metricValue !== null; // 明确排除 null 值
+                })
+              }
+            >
               <XAxis
                 dataKey={(entry) => entry.time}
                 name="time"
