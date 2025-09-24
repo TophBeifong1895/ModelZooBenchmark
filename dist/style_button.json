@@ -1,11 +1,20 @@
 {
   "cv-det": ["目标检测", "#82ca9d"],
-  "cv-cls": ["分类", "#9EDAE5"],
+  "cv-cls": ["图像分类", "#9EDAE5"],
+  "cv-cls_Topn": ["图像分类", "#9EDAE5"],
+  "cv-cls_mAP": ["行人重识别", "#e16162"],
   "cv-kpt_mAP": ["人类关键点检测", "#2CA02C"],
   "cv-kpt_pxErr": ["物体关键点检测", "#FF9896"],
   "cv-mot": ["多目标追踪", "#9467BD"],
   "cv-seg_PQ": ["全景分割", "#FFBB78"],
   "cv-seg_mAP": ["实例分割", "#BCBD22"],
   "cv-seg_mIoU": ["语义分割", "#FF7F0E"],
-  "cv-sod": ["显著性检测", "#17BECF"]
+  "cv-sod": ["显著性检测", "#17BECF"],
+  "cv-sot": ["单目标追踪", "#FFB16B"],
+  "cv-ge": ["视线估计", "#b8c1ec"],
+  "cv-drive_perception": ["驾驶感知", "#b8c"],
+  "cv-sr": ["超分辨率", "#eebbc3"],
+  "nlp": ["自然语言处理", "#ffd803"],
+  "audio_EER": ["声纹识别", "#ffc6c7"],
+  "audio_Top1": ["声音分类", "#ff8ba7"]
 }
